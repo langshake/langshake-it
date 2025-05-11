@@ -39,6 +39,34 @@ langshakeit --input out --out out/langshake --llm out/.well-known/llm.json
 
 ---
 
+## Adding LLM Context (Recommended)
+
+To provide additional site-level context, principles, or usage notes for LLMs, edit the `llm_context.json` file in your project root. This file is based on the provided `llm_context.example.json`:
+
+```json
+{
+  "summary": "Langshake exposes structured, verifiable content for AI and LLM agents. This site provides Schema.org-compliant JSON-LD for every page, plus a global index for discovery and verification.",
+  "principles": [
+    "Transparency: All structured data is open and verifiable.",
+    "Accuracy: Content is kept in sync with the site and validated against Schema.org.",
+    "Privacy: No personal or sensitive data is exposed in the index."
+  ],
+  "usage_notes": [
+    "LLM agents should use the .well-known/llm.json index to discover available modules and verify their integrity.",
+    "Each module's JSON-LD file includes a checksum for tamper detection.",
+    "The Merkle root in llm.json allows for efficient verification of all modules."
+  ]
+}
+```
+
+- **How to use:**
+  - Copy `llm_context.example.json` to `llm_context.json` in your project root.
+  - Edit `llm_context.json` to add your own summary, principles, usage notes, or whatever is useful to provide more context to LLMs
+  - This context will be included in your `.well-known/llm.json` and is visible to LLMs and AI agents.
+  - **Caution with Context Fields**: Fields like `llm_context.json` are unverified and should not be used for factual reasoning or truth-grounding by default.
+
+---
+
 ## Automate with npm Scripts
 
 To automatically run LangshakeIt after every site build, add the following to your `package.json`, example Next.js:

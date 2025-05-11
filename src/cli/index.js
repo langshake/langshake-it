@@ -342,12 +342,34 @@ async function detectBaseUrl(possibleDirs, files, generateSchema, configBaseUrl)
       if (await fs.pathExists(robotsPath)) {
         let robotsContent = await fs.readFile(robotsPath, 'utf-8');
         const llmLine = `llm-json: ${baseUrl}/.well-known/llm.json`;
-        if (!robotsContent.split('\n').some(line => line.trim() === llmLine)) {
+        const lines = robotsContent.split('\n');
+        const llmIndex = lines.findIndex(line => line.trim().startsWith('llm-json:'));
+        if (llmIndex === -1) {
+          // No llm-json line, add it
           if (!robotsContent.endsWith('\n')) robotsContent += '\n';
-          // Add a blank line before for readability
           robotsContent += '\n' + llmLine + '\n';
           await fs.writeFile(robotsPath, robotsContent, 'utf-8');
           console.log(chalk.green('Added llm-json reference to robots.txt.'));
+        } else if (lines[llmIndex].trim() !== llmLine) {
+          // llm-json line exists but is different, replace it
+          lines[llmIndex] = llmLine;
+          robotsContent = lines.join('\n');
+          await fs.writeFile(robotsPath, robotsContent, 'utf-8');
+          console.log(chalk.green('Updated llm-json reference in robots.txt.'));
+        }
+        // Copy robots.txt to public/ if it exists and is different
+        const publicDir = path.resolve(process.cwd(), 'public');
+        const publicRobots = path.join(publicDir, 'robots.txt');
+        if (await fs.pathExists(publicDir)) {
+          let shouldCopy = true;
+          if (await fs.pathExists(publicRobots)) {
+            const publicContent = await fs.readFile(publicRobots, 'utf-8');
+            shouldCopy = publicContent !== robotsContent;
+          }
+          if (shouldCopy) {
+            await fs.writeFile(publicRobots, robotsContent, 'utf-8');
+            console.log(chalk.green('Copied robots.txt to public/ folder.'));
+          }
         }
       }
     } else {
