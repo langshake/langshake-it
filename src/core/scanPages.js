@@ -2,10 +2,10 @@ import { globby } from 'globby';
 import fs from 'fs-extra';
 
 /**
- * Scans the input directory for supported files (.jsx, .mdx).
+ * Scans the input directory for supported files (.html only).
  *
  * @param {string} inputDir - Directory to scan.
- * @returns {Promise<string[]>} List of file paths.
+ * @returns {Promise<string[]>} List of .html file paths.
  */
 export async function scanPages(inputDir) {
   // Check if directory exists
@@ -14,10 +14,9 @@ export async function scanPages(inputDir) {
     // Reason: Gracefully handle missing directory
     return [];
   }
-  // Use globby to find .jsx and .mdx files recursively
+  // Use globby to find .html files recursively
   const patterns = [
-    '**/*.jsx',
-    '**/*.mdx',
+    '**/*.html',
   ];
   try {
     const files = await globby(patterns, {

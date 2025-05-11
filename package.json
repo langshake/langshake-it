@@ -1,5 +1,5 @@
 {
-  "name": "langshake-it",
+  "name": "langshakeit",
   "version": "1.0.0",
   "main": "index.js",
   "directories": {
@@ -24,9 +24,13 @@
   },
   "devDependencies": {
     "eslint": "^9.26.0",
+    "execa": "^9.5.3",
     "prettier": "^3.5.3",
     "vitest": "^3.1.3",
     "zod": "^3.24.4"
   },
-  "type": "module"
+  "type": "module",
+  "bin": {
+    "langshakeit": "./src/cli/index.js"
+  }
 }
