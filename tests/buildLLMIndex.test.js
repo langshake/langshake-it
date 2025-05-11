@@ -1,0 +1,70 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import fs from 'fs-extra';
+import path from 'path';
+import { buildLLMIndex } from '../src/core/buildLLMIndex.js';
+import { calculateMerkleRoot } from '../src/utils/merkle.js';
+
+const TEMP_OUT_DIR = path.join(__dirname, 'tmp-llm-index');
+const LLM_PATH = path.join(TEMP_OUT_DIR, '.well-known/llm.json');
+
+const modules = [
+  { path: 'langshake/about.json', hash: 'a'.repeat(64) },
+  { path: 'langshake/contact.json', hash: 'b'.repeat(64) },
+];
+const site = {
+  name: 'Test Site',
+  description: 'A test site for Langshake.',
+  language: 'en',
+};
+const llmContext = {
+  summary: 'Test summary',
+  principles: ['Test principle'],
+  usage_notes: ['Test usage note'],
+};
+
+describe('buildLLMIndex', () => {
+  beforeEach(async () => {
+    await fs.remove(TEMP_OUT_DIR);
+  });
+  afterEach(async () => {
+    await fs.remove(TEMP_OUT_DIR);
+  });
+
+  it('writes a valid llm.json with correct structure and Merkle root', async () => {
+    await buildLLMIndex(LLM_PATH, modules, site, llmContext);
+    expect(await fs.pathExists(LLM_PATH)).toBe(true);
+    const data = await fs.readJson(LLM_PATH);
+    expect(data.version).toBe('1.0');
+    expect(data.site).toEqual(site);
+    expect(data.modules).toEqual(modules.map(m => m.path));
+    expect(data.llm_context).toEqual(llmContext);
+    expect(data.verification.strategy).toBe('merkle');
+    expect(data.verification.merkleRoot).toBe(calculateMerkleRoot(modules.map(m => m.hash)));
+    expect(typeof data.verification.lastVerified).toBe('string');
+  });
+
+  it('omits llm_context if not provided', async () => {
+    await buildLLMIndex(LLM_PATH, modules, site);
+    const data = await fs.readJson(LLM_PATH);
+    expect(data.llm_context).toBeUndefined();
+  });
+
+  it('throws an error if output path is invalid', async () => {
+    let error;
+    try {
+      await buildLLMIndex('/root/invalid-llm.json', modules, site, llmContext);
+    } catch (e) {
+      error = e;
+    }
+    expect(error).toBeDefined();
+    expect(error.message).toMatch(/Failed to build LLM index/);
+  });
+
+  it('handles empty modules array and produces empty modules/merkleRoot', async () => {
+    await buildLLMIndex(LLM_PATH, [], site, llmContext);
+    const data = await fs.readJson(LLM_PATH);
+    expect(Array.isArray(data.modules)).toBe(true);
+    expect(data.modules.length).toBe(0);
+    expect(data.verification.merkleRoot).toBe('');
+  });
+}); 

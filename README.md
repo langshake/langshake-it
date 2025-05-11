@@ -14,6 +14,16 @@ Langshake is a CLI tool for generating Schema.org-compliant, verifiable JSON-LD 
 npm install
 ```
 
+### Optional: Custom LLM Context
+
+If you want to provide custom context for LLMs (such as a summary, principles, or usage notes), copy the example file to your project root:
+
+```bash
+cp llm_context.example.json llm_context.json
+```
+
+Edit `llm_context.json` to fit your site. This file will be included in your `.well-known/llm.json` index if present.
+
 ## Usage
 
 ```bash
