@@ -143,5 +143,5 @@ whitepaper.md
 # Cache file
 .langshake-cache.json
 
-# cursor files
-.cursor
+# Editor and tool state
+.cursor/
