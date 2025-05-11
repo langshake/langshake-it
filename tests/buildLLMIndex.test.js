@@ -67,4 +67,20 @@ describe('buildLLMIndex', () => {
     expect(data.modules.length).toBe(0);
     expect(data.verification.merkleRoot).toBe('');
   });
+
+  it('produces the same Merkle root regardless of module order', async () => {
+    const modulesA = [
+      { path: 'langshake/about.json', hash: 'a'.repeat(64) },
+      { path: 'langshake/contact.json', hash: 'b'.repeat(64) },
+      { path: 'langshake/other.json', hash: 'c'.repeat(64) },
+    ];
+    const modulesB = [...modulesA].reverse();
+    const llmPathA = path.join(TEMP_OUT_DIR, '.well-known/llmA.json');
+    const llmPathB = path.join(TEMP_OUT_DIR, '.well-known/llmB.json');
+    await buildLLMIndex(llmPathA, modulesA, site, llmContext);
+    await buildLLMIndex(llmPathB, modulesB, site, llmContext);
+    const dataA = await fs.readJson(llmPathA);
+    const dataB = await fs.readJson(llmPathB);
+    expect(dataA.verification.merkleRoot).toBe(dataB.verification.merkleRoot);
+  });
 }); 

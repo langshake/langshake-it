@@ -33,8 +33,9 @@ export async function loadLLMContext(contextPath = DEFAULT_LLM_CONTEXT_PATH) {
 export async function buildLLMIndex(llmPath, modules, site, llmContext) {
   try {
     // Copy module URLs directly, do not edit or prepend
-    const modulePaths = modules.map(m => m.path);
-    const hashes = modules.map(m => m.hash);
+    const sortedModules = [...modules].sort((a, b) => a.path.localeCompare(b.path));
+    const modulePaths = sortedModules.map(m => m.path);
+    const hashes = sortedModules.map(m => m.hash);
     const merkleRoot = calculateMerkleRoot(hashes);
     const now = new Date().toISOString().split('T')[0];
     const llmJson = {
