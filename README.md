@@ -1,100 +1,103 @@
-# Langshake CLI
+# LangshakeIt CLI
 
-Langshake is a CLI tool for generating Schema.org-compliant, verifiable JSON-LD files for every page on a site, plus a global .well-known/llm.json index for AI and LLM agents.
+**The easiest way to make your website AI- and LLM-friendly.**  
+LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, plus a global `.well-known/llm.json` index for AI agents—automatically discoverable via your `robots.txt`.
 
-## Installation
+---
 
-Install globally:
+## Features
+
+- 🔍 **Automatic structured data extraction** from built HTML (no framework lock-in)
+- 🗂️ **Per-page JSON-LD** and a global `.well-known/llm.json` index
+- 🔗 **AI/LLM discoverability**: auto-updates `robots.txt` with a `llm-json:` line
+- 🔑 **Checksum & Merkle root validation** for data integrity
+- ⚡ **Smart caching**: only updates changed files
+- 🛠️ **Config auto-update**: always reflects your real public base URL
+- 🧪 **Fully tested**: robust integration and unit tests
+
+---
+
+## Quick Start
+
 ```bash
+# 1. Install
 npm install -g langshakeit
-```
 
-Or as a dev dependency in your project:
-```bash
-npm install --save-dev langshakeit
-```
-
-## Quick Start: Project Initialization
-
-Before your first run, scaffold recommended config/context files with:
-
-```bash
+# 2. Initialize (creates config/context files)
 langshakeit init
+
+# 3. Build your static site (e.g., Next.js, Astro, etc.)
+npm run build
+
+# 4. Run LangshakeIt
+langshakeit --input out --out out/langshake --llm out/.well-known/llm.json
 ```
 
-This will:
-- Ensure `.langshake-cache.json` exists (created if missing)
-- Ensure `llm_context.example.json` exists (created if missing)
-- Optionally offer to create `llm_context.json` (recommended for custom LLM context, but not required)
-- Ensure output folders (`public/langshake`, `public/.well-known`) exist
+- Your per-page JSON-LD will be in `langshake/`
+- Your global index will be in `.well-known/llm.json`
+- Your `robots.txt` will be updated for LLM/AI discoverability
 
-You can safely run `langshakeit init` multiple times. It will never overwrite existing files.
+---
 
-## Usage
+## Automate with npm Scripts
 
-Build your site locally (e.g., `npm run build` for Next.js, Astro, etc.), then run:
+To automatically run LangshakeIt after every site build, add the following to your `package.json`, example Next.js:
 
-```bash
-langshakeit --input <built_html_dir> --out <jsonld_out_dir> --llm <llm.json>
-```
-
-Or, to automate the build step:
-
-```bash
-langshakeit --build "npm run build" --input <built_html_dir> --out <jsonld_out_dir> --llm <llm.json>
-```
-
-You can also add a script to your `package.json`:
 ```json
 "scripts": {
-  "langshake": "langshakeit --input out/ --out public/langshake --llm public/.well-known/llm.json"
+  "dev": "next dev",
+  "build": "next build",
+  "langshake": "langshakeit",
+  "postbuild": "npm run langshake",
+  "start": "next start",
+  "lint": "next lint"
 }
 ```
 
-## Project Vision
+Now, whenever you run `npm run build`, LangshakeIt will run automatically after your site is built, keeping your structured data up to date with no extra steps.
 
-- Streamline structured content exposure for AI agents and LLMs
-- Output per-page JSON-LD and a global index with Merkle root validation
-- Smart caching to only update changed content
+---
 
-## Setup
+## How It Works
 
-### Optional: Custom LLM Context
+1. **Scans your built HTML** for all pages in the `--input` directory.
+2. **Extracts all JSON-LD** and writes per-page files.
+3. **Builds a global `.well-known/llm.json`** with module URLs, Merkle root, and metadata.
+4. **Auto-detects your public base URL** by checking (in order):
+   - `robots.txt` (`Sitemap:` line)
+   - `sitemap.xml` (first `<loc>`)
+   - JSON-LD in your home page
+   - `--base-url` config/CLI option
+5. **Updates `robots.txt`** to include:
+   ```
+   llm-json: https://yourdomain.com/.well-known/llm.json
+   ```
+   (if not already present)
 
-If you want to provide custom context for LLMs (such as a summary, principles, or usage notes), copy the example file to your project root:
+---
+
+## CLI Usage & Options
 
 ```bash
-cp llm_context.example.json llm_context.json
+langshakeit [options]
 ```
 
-Edit `llm_context.json` to fit your site. This file will be included in your `.well-known/llm.json` index if present.
+| Option         | Description                                                      | Default                      |
+| -------------- | ---------------------------------------------------------------- | ---------------------------- |
+| `--input`      | Directory to scan for built HTML files                           | `out`                        |
+| `--out`        | Output directory for JSON-LD files                               | `public/langshake`           |
+| `--llm`        | Path to `.well-known/llm.json`                                   | `public/.well-known/llm.json`|
+| `--build`      | Build command to run before extraction                           |                              |
+| `--base-url`   | Fallback base URL if not auto-detected                           | `http://localhost`           |
+| `--force`      | Force rebuild all files                                          | `false`                      |
+| `--dry-run`    | Show what would be done without writing files                    | `false`                      |
+| `--verbose`    | Enable verbose output                                            | `false`                      |
 
-## Configuration and Persistent Options
+All options are saved to `langshake.config.json` and auto-updated after each run.
 
-Langshake CLI automatically saves your options to `langshake.config.json` in your project root. On subsequent runs, if you omit any options, the CLI will use the saved values. You can override any option at any time by specifying it again on the command line.
+---
 
-- **--input**: Input directory to scan for built HTML files (e.g., `out/`, `public/`, or your framework's build output)
-- **--out**: Output directory for JSON-LD files
-- **--llm**: Path to `.well-known/llm.json`
-- **--build**: Build command to run before extraction (e.g., `npm run build`)
-- **--force, --dry-run, --verbose**: Additional options for control and output
-
-Each time you run the CLI, it prints the effective options being used (from CLI args and/or config) so you always know what's active.
-
-## How Pages Are Discovered
-
-Langshake determines what pages to process by scanning the input directory (e.g., your built HTML output) for files matching this pattern:
-
-- `**/*.html` — All `.html` files, recursively
-
-The CLI uses the `scanPages` function to:
-- Traverse the specified input directory
-- Find all supported files (including in subdirectories)
-- Return a list of absolute file paths
-
-This list is then used to generate JSON-LD and build the global index. If the directory is missing, empty, or unreadable, it is handled gracefully and no pages are processed.
-
-## File Structure
+## File Structure & Outputs
 
 ```
 /
@@ -130,34 +133,26 @@ This list is then used to generate JSON-LD and build the global index. If the di
 └── README.md
 ```
 
+---
+
 ## Testing
 
 Run all tests with:
-
 ```bash
 npx vitest
 ```
 
-## Integration Testing & Fixtures
+Integration tests use a real Next.js fixture site to ensure realistic, end-to-end extraction. All temp files and `node_modules` are cleaned up after each run.
 
-Langshake's integration tests use a real Next.js fixture site (`simple-site`) to ensure realistic, end-to-end extraction:
-
-- Only the `simple-site` fixture is used for integration tests (no more `jsx-site` or `html-site`)
-- The test suite builds the Next.js app, runs the CLI, and verifies JSON-LD and `.well-known/llm.json` outputs
-- All temp files and `node_modules` are cleaned up after each run—tests never pollute your main project
-- You can add new fixtures under `tests/fixtures/`, but keep them minimal and realistic
-
-Run all tests (unit + integration):
-
-```bash
-npm test
-```
+---
 
 ## Extraction Pipeline
 
 - Only built `.html` files are processed (no `.jsx`/`.mdx` source parsing)
 - Extraction is robust to missing or malformed files
-- The CLI never overwrites or deletes user files—safe to run in any project
+- The CLI never overwrites or deletes user files—except to append the `llm-json` line to robots.txt if needed
+
+---
 
 ## Validation & Style
 
@@ -165,13 +160,27 @@ npm test
 - Enforces code style with ESLint and Prettier
 - All code is modular, with clear separation of CLI, core logic, and tests
 
+---
+
 ## Security & Dependencies
 
 - The Next.js fixture uses version `^14.2.4` (latest at time of writing)
 - Keep your dependencies up to date for security
 
+---
+
 ## Contributing
 
-- See `whitepaper.md` for architecture and spec details
-- When adding new test fixtures, ensure they are cleaned up after tests
-- Follow the modular structure and style conventions
+- All code is modular, with clear separation of CLI, core logic, and tests.
+- When adding new test fixtures, ensure they are minimal, realistic, and cleaned up after tests.
+
+---
+
+## Links & References
+
+- [Whitepaper](./whitepaper.md)
+- [Schema.org](https://schema.org/)
+
+---
+
+**LangshakeIt: Make your site ready for the AI web.**

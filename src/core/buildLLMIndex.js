@@ -27,10 +27,12 @@ export async function loadLLMContext(contextPath = DEFAULT_LLM_CONTEXT_PATH) {
  * @param {object} site - Site metadata (name, description, language)
  * @param {object|null} [llmContext] - Optional LLM context (summary, principles, usage_notes)
  * @returns {Promise<void>}
+ *
+ * Note: Module URLs are copied directly as provided, without modification.
  */
 export async function buildLLMIndex(llmPath, modules, site, llmContext) {
   try {
-    // Prepare modules array for llm.json (just the paths)
+    // Copy module URLs directly, do not edit or prepend
     const modulePaths = modules.map(m => m.path);
     const hashes = modules.map(m => m.hash);
     const merkleRoot = calculateMerkleRoot(hashes);
