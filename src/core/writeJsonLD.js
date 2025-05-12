@@ -15,15 +15,15 @@ export async function writeJsonLD(outDir, slug, jsonLD, cache) {
   try {
     await fs.ensureDir(outDir);
     const filePath = path.join(outDir, `${slug}.json`);
-    const hash = calculateModuleChecksum(jsonLD);
+    // Always treat jsonLD as an array
+    const arr = Array.isArray(jsonLD) ? jsonLD : [jsonLD];
+    const hash = calculateModuleChecksum(arr);
     // Compare with cache
     if (cache[slug] && cache[slug] === hash && await fs.pathExists(filePath)) {
       return { written: false, hash, file: filePath };
     }
-    // Add checksum to output
-    const output = Array.isArray(jsonLD)
-      ? jsonLD.map(obj => ({ ...obj, checksum: hash }))
-      : { ...jsonLD, checksum: hash };
+    // Output: array of objects, then checksum as last element
+    const output = [...arr, { checksum: hash }];
     await fs.writeJson(filePath, output, { spaces: 2 });
     cache[slug] = hash;
     return { written: true, hash, file: filePath };

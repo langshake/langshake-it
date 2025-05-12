@@ -20,7 +20,7 @@ describe('Integration: generateSchema + writeJsonLD', () => {
     await fs.remove(TEMP_OUT_DIR);
   });
 
-  it('extracts JSON-LD from HTML fixture and writes it with checksums', async () => {
+  it('extracts JSON-LD from HTML fixture and writes it with checksum as last element', async () => {
     // Extract JSON-LD from the HTML fixture
     const schemas = await generateSchema(FIXTURE_HTML_PATH);
     expect(Array.isArray(schemas)).toBe(true);
@@ -31,10 +31,15 @@ describe('Integration: generateSchema + writeJsonLD', () => {
     expect(await fs.pathExists(FILE_PATH)).toBe(true);
     const data = await fs.readJson(FILE_PATH);
     expect(Array.isArray(data)).toBe(true);
-    // Each object should have a checksum
-    for (const obj of data) {
-      expect(typeof obj.checksum).toBe('string');
-      expect(obj.checksum.length).toBe(64); // SHA-256 hex
+    expect(data.length).toBe(schemas.length + 1);
+    // All but last should be data objects
+    for (let i = 0; i < schemas.length; i++) {
+      expect(typeof data[i]).toBe('object');
+      expect(data[i]).not.toHaveProperty('checksum');
     }
+    // Last element should be checksum object
+    const last = data[data.length - 1];
+    expect(typeof last.checksum).toBe('string');
+    expect(last.checksum.length).toBe(64); // SHA-256 hex
   });
 }); 

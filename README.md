@@ -36,7 +36,7 @@ langshakeit --input out --out public/langshake --llm public/.well-known/llm.json
 - Your global index will be in `.well-known/llm.json`
 - LLM/AI agents will discover your site via the standard `.well-known/llm.json` file
 
-No arguments are needed if your config file `langshake.config.json` is set up - which happens of first run.
+No arguments are needed if your config file `langshake.config.json` is set up - which happens on first run.
 
 ## CLI Usage & Options
 
@@ -58,6 +58,73 @@ langshakeit [options]
 All options are saved to `langshake.config.json` and auto-updated after each run.
 
 **Tip:** If your build command contains spaces (e.g., `npm run build`), wrap it in quotes: `--build "npm run build"`.
+
+---
+
+## Per-Page JSON-LD Output Format & Checksum
+
+LangshakeIt outputs each page's extracted JSON-LD in a **universal, verifiable format**:
+
+- The output is always an array, even if there is only one JSON-LD object.
+- The **last element** of the array is always an object `{ "checksum": "..." }`.
+- The checksum is calculated from the array of JSON-LD objects (excluding the checksum object itself).
+- The original JSON-LD objects are not mutated or wrapped.
+
+### **Single JSON-LD Object Example**
+
+Extracted:
+```json
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Xavier Macià's Portfolio"
+    // ...other fields...
+  }
+]
+```
+
+Output:
+```json
+[
+  {
+    "@context": "https://schema.org",
+    "@type": "WebPage",
+    "name": "Xavier Macià's Portfolio"
+    // ...other fields...
+  },
+  {
+    "checksum": "d331a28b4568528974860d703cde8b1dac5275e82449ece217c51e4b6882eee4"
+  }
+]
+```
+
+### **Multiple JSON-LD Objects Example**
+
+Extracted:
+```json
+[
+  { "@type": "WebPage", "name": "A" },
+  { "@type": "WebPage", "name": "B" }
+]
+```
+
+Output:
+```json
+[
+  { "@type": "WebPage", "name": "A" },
+  { "@type": "WebPage", "name": "B" },
+  { "checksum": "..." }
+]
+```
+
+### **How to Verify the Checksum**
+1. Read the file as an array.
+2. Remove the last element (the checksum object).
+3. Calculate the checksum on the remaining array.
+4. Compare to the value in the removed checksum object.
+
+This format is universal, easy to verify, and works for both single and multiple JSON-LD objects.
 
 ---
 

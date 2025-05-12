@@ -32,13 +32,15 @@ describe('writeJsonLD', () => {
     await fs.remove(TEMP_OUT_DIR);
   });
 
-  it('writes file if not in cache', async () => {
+  it('writes file if not in cache (single object)', async () => {
     const result = await writeJsonLD(TEMP_OUT_DIR, SLUG, simpleJsonLD, cache);
     expect(result.written).toBe(true);
     expect(await fs.pathExists(FILE_PATH)).toBe(true);
     const data = await fs.readJson(FILE_PATH);
-    expect(data.headline).toBe('Test Article');
-    expect(typeof data.checksum).toBe('string');
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBe(2);
+    expect(data[0].headline).toBe('Test Article');
+    expect(typeof data[1].checksum).toBe('string');
     expect(cache[SLUG]).toBe(result.hash);
   });
 
@@ -54,20 +56,21 @@ describe('writeJsonLD', () => {
     const result2 = await writeJsonLD(TEMP_OUT_DIR, SLUG, changedJsonLD, cache);
     expect(result2.written).toBe(true);
     const data = await fs.readJson(FILE_PATH);
-    expect(data.headline).toBe('Changed Headline');
-    expect(typeof data.checksum).toBe('string');
+    expect(Array.isArray(data)).toBe(true);
+    expect(data[0].headline).toBe('Changed Headline');
+    expect(typeof data[1].checksum).toBe('string');
     expect(cache[SLUG]).toBe(result2.hash);
   });
 
-  it('handles arrays and adds checksum to each object', async () => {
+  it('handles arrays and appends checksum as last element', async () => {
     const result = await writeJsonLD(TEMP_OUT_DIR, SLUG, arrayJsonLD, cache);
     expect(result.written).toBe(true);
     const data = await fs.readJson(FILE_PATH);
     expect(Array.isArray(data)).toBe(true);
-    expect(data.length).toBe(2);
+    expect(data.length).toBe(3);
     expect(data[0].headline).toBe('Test Article');
-    expect(typeof data[0].checksum).toBe('string');
-    expect(typeof data[1].checksum).toBe('string');
+    expect(data[1].name).toBe('Widget');
+    expect(typeof data[2].checksum).toBe('string');
   });
 
   it('throws on invalid output directory', async () => {
