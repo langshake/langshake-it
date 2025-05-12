@@ -145,3 +145,6 @@ whitepaper.md
 
 # Editor and tool state
 .cursor/
+
+# public folder
+public/
