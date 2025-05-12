@@ -1,7 +1,7 @@
 # LangshakeIt CLI
 
 **The easiest way to make your website AI- and LLM-friendly.**  
-LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, plus a global `.well-known/llm.json` index for AI agents—automatically discoverable via your `robots.txt`.
+LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, plus a global `.well-known/llm.json` index for AI agents.
 
 ---
 
@@ -9,7 +9,6 @@ LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, p
 
 - 🔍 **Automatic structured data extraction** from built HTML (no framework lock-in)
 - 🗂️ **Per-page JSON-LD** and a global `.well-known/llm.json` index
-- 🔗 **AI/LLM discoverability**: auto-updates `robots.txt` with a `llm-json:` line
 - 🔑 **Checksum & Merkle root validation** for data integrity
 - ⚡ **Smart caching**: only updates changed files
 - 🛠️ **Config auto-update**: always reflects your real public base URL
@@ -35,7 +34,7 @@ langshakeit --input out --out public/langshake --llm public/.well-known/llm.json
 
 - Your per-page JSON-LD will be in `langshake/`
 - Your global index will be in `.well-known/llm.json`
-- Your `robots.txt` will be updated for LLM/AI discoverability
+- LLM/AI agents will discover your site via the standard `.well-known/llm.json` file
 
 No arguments are needed if your config file `langshake.config.json` is set up - which happens of first run.
 
@@ -125,25 +124,8 @@ Now, whenever you run `npm run build`, LangshakeIt will run automatically after 
    - `sitemap.xml` (first `<loc>`)
    - JSON-LD in your home page
    - `--base-url` config/CLI option
-5. **Updates `robots.txt`** to include:
-   ```
-   llm-json: https://yourdomain.com/.well-known/llm.json
-   ```
-   (if not already present)
-   
-   - The CLI checks if `public/robots.txt` and `out/robots.txt` both exist and are identical. If so, it treats robots.txt as static and will update both files to include the `llm-json:` line if needed.
-   - If either file is missing, empty, or they differ, the CLI assumes robots.txt is dynamic and will **not** overwrite either file. Instead, it prints the correct `llm-json:` line for you to add to your dynamic robots.txt logic.
-   - The detected base URL is always used to generate the correct absolute path for the `llm-json:` line.
-
----
-
-## Caveats & Edge Cases
-
-### robots.txt: Static vs Dynamic Detection
-
-- **Static robots.txt:** If both `public/robots.txt` and `out/robots.txt` exist and are identical, LangshakeIt assumes robots.txt is statically generated and will update both files to include or update the `llm-json:` line.
-- **Dynamic robots.txt:** If either file is missing, empty, or the contents differ, LangshakeIt assumes robots.txt is generated dynamically (e.g., by your framework at runtime) and will not modify either file. Instead, it prints the correct `llm-json:` line for you to add to your dynamic robots.txt logic.
-- **Caveat:** If you have a dynamic robots.txt but also a `public/robots.txt` file, and they happen to match (e.g., after a fresh build), LangshakeIt will treat robots.txt as static and update both files. On the next run, if your dynamic robots.txt does **not** include the new `llm-json:` line, the files will differ and LangshakeIt will warn you again. This is a rare edge case, but be aware if you use both static and dynamic robots.txt generation.
+5. **LLM/AI discovery is handled solely via the standard `.well-known/llm.json` file.**
+   - This approach follows web standards (RFC 8615) and has zero SEO impact.
 
 ---
 
@@ -200,7 +182,7 @@ Integration tests use a real Next.js fixture site to ensure realistic, end-to-en
 
 - Only built `.html` files are processed (no `.jsx`/`.mdx` source parsing)
 - Extraction is robust to missing or malformed files
-- The CLI never overwrites or deletes user files—except to append the `llm-json` line to robots.txt if needed
+- The CLI never overwrites or deletes user files except the generated json files
 
 ---
 

@@ -349,49 +349,6 @@ async function detectBaseUrl(possibleDirs, files, generateSchema, configBaseUrl)
     if (!options['dry-run']) {
       await buildLLMIndex(options.llm, modules, site, llmContext);
       console.log(chalk.green(`LLM index written to ${options.llm}`));
-
-      // --- robots.txt handling ---
-      const baseUrl = options['base-url'];
-      const llmLine = `llm-json: ${baseUrl}/.well-known/llm.json`;
-      const publicRobotsPath = path.resolve(process.cwd(), 'public/robots.txt');
-      const outRobotsPath = path.resolve(process.cwd(), 'out/robots.txt');
-      const publicRobotsExists = await fs.pathExists(publicRobotsPath);
-      const outRobotsExists = await fs.pathExists(outRobotsPath);
-      let isStatic = false;
-      if (publicRobotsExists) {
-        let publicContent = await fs.readFile(publicRobotsPath, 'utf-8');
-        if (publicContent.length > 0 && outRobotsExists) {
-          const outContent = await fs.readFile(outRobotsPath, 'utf-8');
-          if (publicContent === outContent) {
-            isStatic = true;
-            // Update/add llm-json line if needed
-            let lines = publicContent.split('\n');
-            const llmIndex = lines.findIndex(line => line.trim().startsWith('llm-json:'));
-            if (llmIndex === -1) {
-              // Add
-              if (!publicContent.endsWith('\n')) publicContent += '\n';
-              publicContent += '\n' + llmLine + '\n';
-              await fs.writeFile(publicRobotsPath, publicContent, 'utf-8');
-              await fs.writeFile(outRobotsPath, publicContent, 'utf-8');
-              console.log(chalk.green('Added llm-json reference to robots.txt.'));
-            } else if (lines[llmIndex].trim() !== llmLine) {
-              // Replace
-              const updatedContent = lines.map((line, idx) => idx === llmIndex ? llmLine : line).join('\n');
-              await fs.writeFile(publicRobotsPath, updatedContent, 'utf-8');
-              await fs.writeFile(outRobotsPath, updatedContent, 'utf-8');
-              console.log(chalk.green('Updated llm-json reference in robots.txt.'));
-            } else {
-              // Already correct
-              console.log(chalk.gray('llm-json reference already correct in robots.txt.'));
-            }
-          }
-        }
-      }
-      if (!isStatic) {
-        // Dynamic or ambiguous
-        console.log(chalk.yellow('robots.txt is likely dynamic (public/robots.txt is missing, empty, or does not match out/robots.txt). Please ensure the following llm-json line is included in your dynamic robots.txt logic:'));
-        console.log(llmLine);
-      }
     } else {
       console.log(chalk.blue(`[Dry Run] Would build LLM index at ${options.llm}`));
     }
