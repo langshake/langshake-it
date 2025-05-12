@@ -1,18 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { createHash } from 'crypto';
-
-/**
- * Compute SHA-256 hash of a JSON object, excluding the 'checksum' field if present.
- * @param {object} jsonLD - The JSON-LD object or array to hash
- * @returns {string} The SHA-256 hex digest
- */
-function computeJsonLDHash(jsonLD) {
-  // Remove 'checksum' field if present (deep copy)
-  const clean = JSON.parse(JSON.stringify(jsonLD, (key, value) => key === 'checksum' ? undefined : value));
-  const str = JSON.stringify(clean);
-  return createHash('sha256').update(str).digest('hex');
-}
+import { calculateModuleChecksum } from '../utils/merkle.js';
 
 /**
  * Write JSON-LD to /public/langshake/[slug].json if content changed (by hash).
@@ -27,7 +15,7 @@ export async function writeJsonLD(outDir, slug, jsonLD, cache) {
   try {
     await fs.ensureDir(outDir);
     const filePath = path.join(outDir, `${slug}.json`);
-    const hash = computeJsonLDHash(jsonLD);
+    const hash = calculateModuleChecksum(jsonLD);
     // Compare with cache
     if (cache[slug] && cache[slug] === hash && await fs.pathExists(filePath)) {
       return { written: false, hash, file: filePath };

@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import fs from 'fs-extra';
 import path from 'path';
 import { buildLLMIndex } from '../src/core/buildLLMIndex.js';
-import { calculateMerkleRoot } from '../src/utils/merkle.js';
+import { prepareMerkleIndex } from '../src/utils/merkle.js';
 
 const TEMP_OUT_DIR = path.join(__dirname, 'tmp-llm-index');
 const LLM_PATH = path.join(TEMP_OUT_DIR, '.well-known/llm.json');
@@ -34,12 +34,13 @@ describe('buildLLMIndex', () => {
     await buildLLMIndex(LLM_PATH, modules, site, llmContext);
     expect(await fs.pathExists(LLM_PATH)).toBe(true);
     const data = await fs.readJson(LLM_PATH);
+    const { modulePaths, merkleRoot } = prepareMerkleIndex(modules);
     expect(data.version).toBe('1.0');
     expect(data.site).toEqual(site);
-    expect(data.modules).toEqual(modules.map(m => m.path));
+    expect(data.modules).toEqual(modulePaths);
     expect(data.llm_context).toEqual(llmContext);
     expect(data.verification.strategy).toBe('merkle');
-    expect(data.verification.merkleRoot).toBe(calculateMerkleRoot(modules.map(m => m.hash)));
+    expect(data.verification.merkleRoot).toBe(merkleRoot);
     expect(typeof data.verification.lastVerified).toBe('string');
   });
 
@@ -81,6 +82,10 @@ describe('buildLLMIndex', () => {
     await buildLLMIndex(llmPathB, modulesB, site, llmContext);
     const dataA = await fs.readJson(llmPathA);
     const dataB = await fs.readJson(llmPathB);
+    const { merkleRoot: rootA } = prepareMerkleIndex(modulesA);
+    const { merkleRoot: rootB } = prepareMerkleIndex(modulesB);
     expect(dataA.verification.merkleRoot).toBe(dataB.verification.merkleRoot);
+    expect(dataA.verification.merkleRoot).toBe(rootA);
+    expect(dataB.verification.merkleRoot).toBe(rootB);
   });
 }); 

@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import path from 'path';
-import { calculateMerkleRoot } from '../utils/merkle.js';
+import { prepareMerkleIndex } from '../utils/merkle.js';
 
 const DEFAULT_LLM_CONTEXT_PATH = path.resolve(process.cwd(), 'llm_context.json');
 
@@ -32,11 +32,8 @@ export async function loadLLMContext(contextPath = DEFAULT_LLM_CONTEXT_PATH) {
  */
 export async function buildLLMIndex(llmPath, modules, site, llmContext) {
   try {
-    // Copy module URLs directly, do not edit or prepend
-    const sortedModules = [...modules].sort((a, b) => a.path.localeCompare(b.path));
-    const modulePaths = sortedModules.map(m => m.path);
-    const hashes = sortedModules.map(m => m.hash);
-    const merkleRoot = calculateMerkleRoot(hashes);
+    // Use centralized Merkle index preparation for determinism
+    const { modulePaths, merkleRoot } = prepareMerkleIndex(modules);
     const now = new Date().toISOString().split('T')[0];
     const llmJson = {
       version: '1.0',
