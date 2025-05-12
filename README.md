@@ -30,16 +30,39 @@ langshakeit init
 npm run build
 
 # 4. Run LangshakeIt
-langshakeit --input out --out out/langshake --llm out/.well-known/llm.json
+langshakeit --input out --out public/langshake --llm public/.well-known/llm.json
 ```
 
 - Your per-page JSON-LD will be in `langshake/`
 - Your global index will be in `.well-known/llm.json`
 - Your `robots.txt` will be updated for LLM/AI discoverability
 
+No arguments are needed if your config file `langshake.config.json` is set up - which happens of first run.
+
+## CLI Usage & Options
+
+```bash
+langshakeit [options]
+```
+
+| Option         | Description                                                      | Default                      |
+| -------------- | ---------------------------------------------------------------- | ---------------------------- |
+| `--input`      | Directory to scan for built HTML files                           | `out`                        |
+| `--out`        | Output directory for JSON-LD files                               | `public/langshake`           |
+| `--llm`        | Path to `.well-known/llm.json`                                   | `public/.well-known/llm.json`|
+| `--build`      | Build command to run before extraction                           | e.g., `"npm run build"`      |
+| `--base-url`   | Fallback base URL if not auto-detected                           | `http://localhost`           |
+| `--force`      | Force rebuild all files                                          | `false`                      |
+| `--dry-run`    | Show what would be done without writing files                    | `false`                      |
+| `--verbose`    | Enable verbose output                                            | `false`                      |
+
+All options are saved to `langshake.config.json` and auto-updated after each run.
+
+**Tip:** If your build command contains spaces (e.g., `npm run build`), wrap it in quotes: `--build "npm run build"`.
+
 ---
 
-## Adding LLM Context (Recommended)
+## Adding LLM Context (Optional)
 
 To provide additional site-level context, principles, or usage notes for LLMs, edit the `llm_context.json` file in your project root. This file is based on the provided `llm_context.example.json`:
 
@@ -76,13 +99,19 @@ To automatically run LangshakeIt after every site build, add the following to yo
   "dev": "next dev",
   "build": "next build",
   "langshake": "langshakeit",
-  "postbuild": "npm run langshake",
+  "postbuild": "POSTBUILD=1 npm run langshake",
   "start": "next start",
   "lint": "next lint"
 }
 ```
 
+- On Windows, use: `"postbuild": "set POSTBUILD=1 && npm run langshake"`
+
 Now, whenever you run `npm run build`, LangshakeIt will run automatically after your site is built, keeping your structured data up to date with no extra steps.
+
+> **Warning:** If you run `langshakeit --build "npm run build"` and also have a postbuild script that runs LangshakeIt, it will cause LangshakeIt to run twice for every build. Use only one approach.
+
+> **Tip:** Setting `POSTBUILD=1` in your postbuild script will suppress the build warning from LangshakeIt, since the build has already run.
 
 ---
 
@@ -101,27 +130,20 @@ Now, whenever you run `npm run build`, LangshakeIt will run automatically after 
    llm-json: https://yourdomain.com/.well-known/llm.json
    ```
    (if not already present)
+   
+   - The CLI checks if `public/robots.txt` and `out/robots.txt` both exist and are identical. If so, it treats robots.txt as static and will update both files to include the `llm-json:` line if needed.
+   - If either file is missing, empty, or they differ, the CLI assumes robots.txt is dynamic and will **not** overwrite either file. Instead, it prints the correct `llm-json:` line for you to add to your dynamic robots.txt logic.
+   - The detected base URL is always used to generate the correct absolute path for the `llm-json:` line.
 
 ---
 
-## CLI Usage & Options
+## Caveats & Edge Cases
 
-```bash
-langshakeit [options]
-```
+### robots.txt: Static vs Dynamic Detection
 
-| Option         | Description                                                      | Default                      |
-| -------------- | ---------------------------------------------------------------- | ---------------------------- |
-| `--input`      | Directory to scan for built HTML files                           | `out`                        |
-| `--out`        | Output directory for JSON-LD files                               | `public/langshake`           |
-| `--llm`        | Path to `.well-known/llm.json`                                   | `public/.well-known/llm.json`|
-| `--build`      | Build command to run before extraction                           |                              |
-| `--base-url`   | Fallback base URL if not auto-detected                           | `http://localhost`           |
-| `--force`      | Force rebuild all files                                          | `false`                      |
-| `--dry-run`    | Show what would be done without writing files                    | `false`                      |
-| `--verbose`    | Enable verbose output                                            | `false`                      |
-
-All options are saved to `langshake.config.json` and auto-updated after each run.
+- **Static robots.txt:** If both `public/robots.txt` and `out/robots.txt` exist and are identical, LangshakeIt assumes robots.txt is statically generated and will update both files to include or update the `llm-json:` line.
+- **Dynamic robots.txt:** If either file is missing, empty, or the contents differ, LangshakeIt assumes robots.txt is generated dynamically (e.g., by your framework at runtime) and will not modify either file. Instead, it prints the correct `llm-json:` line for you to add to your dynamic robots.txt logic.
+- **Caveat:** If you have a dynamic robots.txt but also a `public/robots.txt` file, and they happen to match (e.g., after a fresh build), LangshakeIt will treat robots.txt as static and update both files. On the next run, if your dynamic robots.txt does **not** include the new `llm-json:` line, the files will differ and LangshakeIt will warn you again. This is a rare edge case, but be aware if you use both static and dynamic robots.txt generation.
 
 ---
 

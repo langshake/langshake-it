@@ -41,8 +41,9 @@ async function loadConfig() {
  * @returns {Promise<void>}
  */
 async function saveConfig(config) {
+  const { build, ...configToSave } = config;
   try {
-    await fs.writeJson(CONFIG_FILE, config, { spaces: 2 });
+    await fs.writeJson(CONFIG_FILE, configToSave, { spaces: 2 });
   } catch (e) {
     console.warn(chalk.yellow('Warning: Could not save config file.'));
   }
@@ -214,21 +215,21 @@ async function detectBaseUrl(possibleDirs, files, generateSchema, configBaseUrl)
   // --- Main Extraction and Processing Logic ---
   // (move your main CLI logic here)
   // Load config and merge with CLI args
-  const config = await loadConfig();
-  const options = mergeOptions(config, argv);
+  let config = await loadConfig();
+  let options = mergeOptions(config, argv);
 
-  // Save new/changed options back to config
-  await saveConfig(options);
-
-  // Print effective options
-  console.log(chalk.green.bold('Langshake CLI'));
-  console.log(chalk.gray('For help, use --help.'));
-  console.log(chalk.cyan('Using options:'));
-  for (const [key, value] of Object.entries(options)) {
-    if (value !== undefined) {
-      console.log(`  ${key}: ${value}`);
+  // Safeguard: If in postbuild and build is set, warn, ignore, and clean config
+  if (process.env.npm_lifecycle_event === 'postbuild' && options.build) {
+    console.error(chalk.red('Warning: --build should not be used in postbuild. Ignoring build command to prevent recursion.'));
+    delete options.build;
+    if (config.build) {
+      delete config.build;
+      await saveConfig(config);
     }
   }
+
+  // Save new/changed options back to config (without build)
+  await saveConfig(options);
 
   // Build step integration
   if (options.build) {
@@ -240,8 +241,8 @@ async function detectBaseUrl(possibleDirs, files, generateSchema, configBaseUrl)
       process.exit(result.status || 1);
     }
     console.log(chalk.green('Build completed successfully.'));
-  } else {
-    console.log(chalk.yellow('No build command specified. Output may be stale.'));
+  } else if (!process.env.POSTBUILD) {
+    console.log(chalk.yellow('No build command specified. Your build output may be stale.'));
   }
 
   // --- Main Pipeline ---
@@ -272,6 +273,17 @@ async function detectBaseUrl(possibleDirs, files, generateSchema, configBaseUrl)
   const baseUrl = await detectBaseUrl([siteRoot], files, generateSchema, options['base-url'] || 'http://localhost');
   options['base-url'] = baseUrl;
   await saveConfig(options);
+
+  // Print effective options (after base-url detection)
+  console.log(chalk.green.bold('Langshake CLI'));
+  console.log(chalk.gray('For help, use --help.'));
+  console.log(chalk.cyan('Using options:'));
+  for (const [key, value] of Object.entries(options)) {
+    if (value !== undefined) {
+      console.log(`  ${key}: ${value}`);
+    }
+  }
+
   for (const file of files) {
     try {
       const schemas = await generateSchema(file);
@@ -337,40 +349,48 @@ async function detectBaseUrl(possibleDirs, files, generateSchema, configBaseUrl)
     if (!options['dry-run']) {
       await buildLLMIndex(options.llm, modules, site, llmContext);
       console.log(chalk.green(`LLM index written to ${options.llm}`));
-      // Ensure robots.txt contains llm-json reference if it exists
-      const robotsPath = path.join(siteRoot, 'robots.txt');
-      if (await fs.pathExists(robotsPath)) {
-        let robotsContent = await fs.readFile(robotsPath, 'utf-8');
-        const llmLine = `llm-json: ${baseUrl}/.well-known/llm.json`;
-        const lines = robotsContent.split('\n');
-        const llmIndex = lines.findIndex(line => line.trim().startsWith('llm-json:'));
-        if (llmIndex === -1) {
-          // No llm-json line, add it
-          if (!robotsContent.endsWith('\n')) robotsContent += '\n';
-          robotsContent += '\n' + llmLine + '\n';
-          await fs.writeFile(robotsPath, robotsContent, 'utf-8');
-          console.log(chalk.green('Added llm-json reference to robots.txt.'));
-        } else if (lines[llmIndex].trim() !== llmLine) {
-          // llm-json line exists but is different, replace it
-          lines[llmIndex] = llmLine;
-          robotsContent = lines.join('\n');
-          await fs.writeFile(robotsPath, robotsContent, 'utf-8');
-          console.log(chalk.green('Updated llm-json reference in robots.txt.'));
-        }
-        // Copy robots.txt to public/ if it exists and is different
-        const publicDir = path.resolve(process.cwd(), 'public');
-        const publicRobots = path.join(publicDir, 'robots.txt');
-        if (await fs.pathExists(publicDir)) {
-          let shouldCopy = true;
-          if (await fs.pathExists(publicRobots)) {
-            const publicContent = await fs.readFile(publicRobots, 'utf-8');
-            shouldCopy = publicContent !== robotsContent;
+
+      // --- robots.txt handling ---
+      const baseUrl = options['base-url'];
+      const llmLine = `llm-json: ${baseUrl}/.well-known/llm.json`;
+      const publicRobotsPath = path.resolve(process.cwd(), 'public/robots.txt');
+      const outRobotsPath = path.resolve(process.cwd(), 'out/robots.txt');
+      const publicRobotsExists = await fs.pathExists(publicRobotsPath);
+      const outRobotsExists = await fs.pathExists(outRobotsPath);
+      let isStatic = false;
+      if (publicRobotsExists) {
+        let publicContent = await fs.readFile(publicRobotsPath, 'utf-8');
+        if (publicContent.length > 0 && outRobotsExists) {
+          const outContent = await fs.readFile(outRobotsPath, 'utf-8');
+          if (publicContent === outContent) {
+            isStatic = true;
+            // Update/add llm-json line if needed
+            let lines = publicContent.split('\n');
+            const llmIndex = lines.findIndex(line => line.trim().startsWith('llm-json:'));
+            if (llmIndex === -1) {
+              // Add
+              if (!publicContent.endsWith('\n')) publicContent += '\n';
+              publicContent += '\n' + llmLine + '\n';
+              await fs.writeFile(publicRobotsPath, publicContent, 'utf-8');
+              await fs.writeFile(outRobotsPath, publicContent, 'utf-8');
+              console.log(chalk.green('Added llm-json reference to robots.txt.'));
+            } else if (lines[llmIndex].trim() !== llmLine) {
+              // Replace
+              const updatedContent = lines.map((line, idx) => idx === llmIndex ? llmLine : line).join('\n');
+              await fs.writeFile(publicRobotsPath, updatedContent, 'utf-8');
+              await fs.writeFile(outRobotsPath, updatedContent, 'utf-8');
+              console.log(chalk.green('Updated llm-json reference in robots.txt.'));
+            } else {
+              // Already correct
+              console.log(chalk.gray('llm-json reference already correct in robots.txt.'));
+            }
           }
-          if (shouldCopy) {
-            await fs.writeFile(publicRobots, robotsContent, 'utf-8');
-            console.log(chalk.green('Copied robots.txt to public/ folder.'));
-          }
         }
+      }
+      if (!isStatic) {
+        // Dynamic or ambiguous
+        console.log(chalk.yellow('robots.txt is likely dynamic (public/robots.txt is missing, empty, or does not match out/robots.txt). Please ensure the following llm-json line is included in your dynamic robots.txt logic:'));
+        console.log(llmLine);
       }
     } else {
       console.log(chalk.blue(`[Dry Run] Would build LLM index at ${options.llm}`));
