@@ -210,7 +210,7 @@ Integration tests use a real Next.js fixture site to ensure realistic, end-to-en
 
 ## Links & References
 
-- [Whitepaper](./whitepaper.md)
+- [Whitepaper](https://github.com/langshake/langshake.github.io/blob/master/whitepaper.md)
 - [Schema.org](https://schema.org/)
 
 ---
