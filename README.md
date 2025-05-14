@@ -253,7 +253,7 @@ Learn more: [whitepaper](https://github.com/langshake/langshake.github.io/blob/m
 
 ## Companion Tool: Shakeproof CLI
 
-After generating your `.well-known/llm.json` and per-page JSON-LD modules with LangshakeIt, you can verify, validate, and benchmark them using **[Shakeproof CLI](https://github.com/langshake/shakeproof)** — the official LangShake protocol testing suite.
+After generating your `.well-known/llm.json` and per-page JSON-LD modules with LangshakeIt, you can verify, validate, and benchmark them using **[Shakeproof CLI](https://github.com/langshake/shake-proof)** — the official LangShake protocol testing suite.
 
 Shakeproof ensures your structured data is not only well-formed, but also **trustworthy**, **accurate**, and **LLM-ready**.
 
