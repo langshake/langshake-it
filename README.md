@@ -3,8 +3,6 @@
 **The easiest way to make your website AI- and LLM-friendly.**  
 LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, plus a global `.well-known/llm.json` index for AI agents.
 
----
-
 ## Features
 
 - 🔍 **Automatic structured data extraction** from built HTML (no framework lock-in)
@@ -13,8 +11,6 @@ LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, p
 - ⚡ **Smart caching**: only updates changed files
 - 🛠️ **Config auto-update**: always reflects your real public base URL
 - 🧪 **Fully tested**: robust integration and unit tests
-
----
 
 ## Quick Start
 
@@ -58,8 +54,6 @@ langshakeit [options]
 All options are saved to `langshake.config.json` and auto-updated after each run.
 
 **Tip:** If your build command contains spaces (e.g., `npm run build`), wrap it in quotes: `--build "npm run build"`.
-
----
 
 ## Per-Page JSON-LD Output Format & Checksum
 
@@ -126,8 +120,6 @@ Output:
 
 This format is universal, easy to verify, and works for both single and multiple JSON-LD objects.
 
----
-
 ## Adding LLM Context (Optional)
 
 To provide additional site-level context, principles, or usage notes for LLMs, edit the `llm_context.json` file in your project root. This file is based on the provided `llm_context.example.json`:
@@ -154,8 +146,6 @@ To provide additional site-level context, principles, or usage notes for LLMs, e
   - This context will be included in your `.well-known/llm.json` and is visible to LLMs and AI agents.
   - **Caution with Context Fields**: Fields like `llm_context.json` are unverified and should not be used for factual reasoning or truth-grounding by default.
 
----
-
 ## Automate with npm Scripts
 
 To automatically run LangshakeIt after every site build, add the following to your `package.json`, example Next.js:
@@ -179,8 +169,6 @@ Now, whenever you run `npm run build`, LangshakeIt will run automatically after 
 
 > **Tip:** Setting `POSTBUILD=1` in your postbuild script will suppress the build warning from LangshakeIt, since the build has already run.
 
----
-
 ## How It Works
 
 1. **Scans your built HTML** for all pages in the `--input` directory.
@@ -193,8 +181,6 @@ Now, whenever you run `npm run build`, LangshakeIt will run automatically after 
    - `--base-url` config/CLI option
 5. **LLM/AI discovery is handled solely via the standard `.well-known/llm.json` file.**
    - This approach follows web standards (RFC 8615) and has zero SEO impact.
-
----
 
 ## File Structure & Outputs
 
@@ -232,8 +218,6 @@ Now, whenever you run `npm run build`, LangshakeIt will run automatically after 
 └── README.md
 ```
 
----
-
 ## Testing
 
 Run all tests with:
@@ -243,15 +227,11 @@ npx vitest
 
 Integration tests use a real Next.js fixture site to ensure realistic, end-to-end extraction. All temp files and `node_modules` are cleaned up after each run.
 
----
-
 ## Extraction Pipeline
 
 - Only built `.html` files are processed (no `.jsx`/`.mdx` source parsing)
 - Extraction is robust to missing or malformed files
 - The CLI never overwrites or deletes user files except the generated json files
-
----
 
 ## Validation & Style
 
@@ -259,27 +239,32 @@ Integration tests use a real Next.js fixture site to ensure realistic, end-to-en
 - Enforces code style with ESLint and Prettier
 - All code is modular, with clear separation of CLI, core logic, and tests
 
----
+## About the LangShake Protocol
 
-## Security & Dependencies
+LangShake is a dual-layer micro-standard for machine-readable web content:
 
-- The Next.js fixture uses version `^14.2.4` (latest at time of writing)
-- Keep your dependencies up to date for security
+* **.well-known/llm.json**: Declares site-wide structured data modules & metadata
+* **Modular JSON files**: Contain pure, schema.org-compliant JSON-LD arrays with checksums
+* **Merkle root validation**: Ensures integrity across modules
 
----
+Learn more: [whitepaper](https://github.com/langshake/langshake.github.io/blob/master/whitepaper.md)
 
-## Contributing
+## Get Involved
 
-- All code is modular, with clear separation of CLI, core logic, and tests.
-- When adding new test fixtures, ensure they are minimal, realistic, and cleaned up after tests.
+LangShake is fully open source (MIT) and community-driven.
 
----
+We welcome:
 
-## Links & References
+* Web developers who want to expose AI-friendly content
+* Toolmakers who want to integrate LangShake support
+* Contributors to help expand crawler compatibility or reporting
 
-- [Whitepaper](https://github.com/langshake/langshake.github.io/blob/master/whitepaper.md)
-- [Schema.org](https://schema.org/)
+GitHub: [github.com/langshake](https://github.com/langshake)
 
----
+## License
 
-**LangshakeIt: Make your site ready for the AI web.**
+MIT — Free to use, fork, improve, and adapt.
+
+## Thanks
+
+This project was inspired by the growing need for **verifiable**, **trustworthy**, and **machine-optimized** content delivery. We believe LangShake can be the `robots.txt` of the AI era.
