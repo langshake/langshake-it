@@ -12,19 +12,25 @@ LangshakeIt generates verifiable, Schema.org-compliant JSON-LD for every page, p
 - 🛠️ **Config auto-update**: always reflects your real public base URL
 - 🧪 **Fully tested**: robust integration and unit tests
 
+## Installation
+
+```bash
+git clone https://github.com/langshake/langshake-it
+cd langshake-it
+npm install
+npm link   # For global CLI access (development)
+```
+
 ## Quick Start
 
 ```bash
-# 1. Install
-npm install -g langshakeit
-
-# 2. Initialize (creates config/context files)
+# 1. Initialize (creates config/context files)
 langshakeit init
 
-# 3. Build your static site (e.g., Next.js, Astro, etc.)
+# 2. Build your static site (e.g., Next.js, Astro, etc.)
 npm run build
 
-# 4. Run LangshakeIt
+# 3. Run LangshakeIt
 langshakeit --input out --out public/langshake --llm public/.well-known/llm.json
 ```
 
